@@ -17,17 +17,46 @@
 #  along with forsake. If not, see <https://www.gnu.org/licenses/>.
 # ********************************************************************
 
+import random
+
+from multiprocessing import Process
+
 
 class TestClientServerCommunication:
+    HOST="localhost"
+    PORT=random.randrange(10000, 2**16-1)
+
+    def spawn_server(self):
+        from forsake.server import Server
+
+        server = Server(self.HOST, self.PORT)
+        process = Process(target=server.start, args=(), daemon=True)
+        process.start()
+        return process
+
+    def spawn_client(self, host=HOST, port=PORT):
+        from forsake.client import Client
+
+        client = Client(host, port)
+        process = Process(target=client.start, args=(), daemon=True)
+        process.start()
+        return process
+
     def test_client_without_server(self):
         # When starting a client without a server, the client crashes and
         # terminates immediately.
-        from forsake.client import Client
+        client = self.spawn_client()
+        client.join()
+        assert client.exitcode != 0
 
-        from random import randrange
-        client = Client(f"http://localhost:{randrange(9000, 2**16)}")
+    def test_connect(self):
+        server = self.spawn_server()
+        client = self.spawn_client()
 
-        from multiprocessing import Process
-        client_process = Process(target=client.start, args=())
-        client_process.start()
-        client_process.join()
+        client.join()
+
+        server.terminate()
+        server.join()
+
+        assert client.exitcode == 0
+        assert server.exitcode == -15

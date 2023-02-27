@@ -17,19 +17,22 @@
 #  along with forsake. If not, see <https://www.gnu.org/licenses/>.
 # ********************************************************************
 
-class Client:
+class Server:
     def __init__(self, host, port):
-        self._url = f"http://{host}:{port}"
+        self._host = host
+        self._port = port
 
     def start(self):
         r"""
-        Connect to the server.
+        Start the server and listen on the connected host and port.
 
-        This method blocks until the server signals to us that the forked
-        process has terminated.
+        This method blocks forever to serve requests.
         """
-        from xmlrpc.client import ServerProxy
-        with ServerProxy(self._url) as proxy:
-            from xmlrpc.server import SimpleXMLRPCServer
-            with SimpleXMLRPCServer(("localhost", 8080)) as server:
-                proxy.spawn()
+        from xmlrpc.server import SimpleXMLRPCServer
+        with SimpleXMLRPCServer((self._host, self._port)) as server:
+            server.register_function(self.spawn, "spawn")            
+
+            server.serve_forever()
+
+    def spawn(self):
+        return 0
