@@ -1,0 +1,7 @@
+name: forsake-dev
+channels:
+- conda-forge
+- defaults
+dependencies:
+- pytest
+
