@@ -30,22 +30,14 @@ class TestClientServerCommunication(ClientServer):
     def test_client_without_server(self, socket):
         # When starting a client without a server, the client crashes and
         # terminates immediately.
-        client = self.spawn_client(socket=socket)
-        client.join()
-        assert client.exitcode != 0
+        with self.spawn_client(socket=socket, exitcode=1):
+            pass
 
     def test_exception(self, socket):
         # An exception on the forked process (the default server throws NotImplementedError) is reported on the client.
-        server = self.spawn_server(socket=socket)
-        client = self.spawn_client(socket=socket)
-
-        client.join()
-
-        server.kill()
-        server.join()
-
-        assert client.exitcode == 1
-        assert server.exitcode == -9
+        with self.spawn_server(socket=socket):
+            with self.spawn_client(socket=socket, exitcode=1):
+                pass
 
     def test_connect(self, socket):
         # If the forked process does nothing, the client exits successfully.
@@ -53,16 +45,9 @@ class TestClientServerCommunication(ClientServer):
             def startup(self, _):
                 pass
 
-        server = self.spawn_server(socket=socket, server=Server)
-        client = self.spawn_client(socket=socket)
-
-        client.join()
-
-        server.kill()
-        server.join()
-
-        assert client.exitcode == 0
-        assert server.exitcode == -9
+        with self.spawn_server(socket=socket, server=Server):
+            with self.spawn_client(socket=socket):
+                pass
 
     def test_keyboard_interrupt(self, socket):
         # When C-c is pressed on the client, the forked process receives it.
@@ -86,13 +71,6 @@ class TestClientServerCommunication(ClientServer):
 
                 super()._join()
 
-        server = self.spawn_server(socket=socket, server=Server)
-        client = self.spawn_client(socket=socket, client=Client)
-
-        client.join()
-
-        server.kill()
-        server.join()
-
-        assert client.exitcode == 42
-        assert server.exitcode == -9
+        with self.spawn_server(socket=socket, server=Server):
+            with self.spawn_client(socket=socket, client=Client, exitcode=42):
+                pass
