@@ -1,5 +1,11 @@
 TODO: Write something smart here
 
+## Installation
+
+```
+pip install forsake
+```
+
 ## Examples
 
 ### Spawn IPython with Preloaded Modules
