@@ -28,11 +28,38 @@ class Server:
 
         This method blocks forever to serve requests.
         """
+        self.warmup()
+
         from xmlrpc.server import SimpleXMLRPCServer
-        with SimpleXMLRPCServer((self._host, self._port)) as server:
-            server.register_function(self.spawn, "spawn")            
+        with SimpleXMLRPCServer((self._host, self._port), use_builtin_types=True, allow_none=True) as server:
+            server.register_function(self.spawn, "spawn")
 
             server.serve_forever()
 
-    def spawn(self):
-        return 0
+    def spawn(self, client, args):
+        r"""
+        Fork a process, run its :meth:`startup` with ``args`` and report the
+        process ID of the forked process to the caller.
+        """
+        from forsake.forker import Forker
+        forker = Forker(startup=lambda: self.startup(args), on_exit=lambda worker: self.exit(client, worker.exitcode))
+        pid = forker.start()
+        return pid
+
+    def exit(self, url, exitcode):
+        from xmlrpc.client import ServerProxy
+        with ServerProxy(url, allow_none=True) as proxy:
+            proxy.exit(exitcode)
+
+    def warmup(self):
+        r"""
+        Prepare this process so it is ready to :meth:`spawn` and run
+        :meth:`startup` in any forks created.
+
+        Subclasses can override this to perform custom initialization such as
+        importing expensive modules.
+        """
+        pass
+
+    def startup(self, args):
+        raise NotImplementedError("server does not define a startup method, forked process will terminate immediately")

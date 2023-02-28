@@ -20,8 +20,10 @@
 class Client:
     def __init__(self, host, port):
         self._url = f"http://{host}:{port}"
+        self._server = None
+        self._exitcode = None
 
-    def start(self):
+    def start(self, args=None):
         r"""
         Connect to the server.
 
@@ -29,7 +31,28 @@ class Client:
         process has terminated.
         """
         from xmlrpc.client import ServerProxy
-        with ServerProxy(self._url) as proxy:
+        with ServerProxy(self._url, allow_none=True) as proxy:
             from xmlrpc.server import SimpleXMLRPCServer
-            with SimpleXMLRPCServer(("localhost", 8080)) as server:
-                proxy.spawn()
+
+            from random import randrange
+            port = randrange(2**13, 2**16)
+
+            with SimpleXMLRPCServer(("localhost", port), use_builtin_types=True, allow_none=True) as server:
+                self._server = server
+                server.register_function(self.on_exit, "exit")
+
+                pid = proxy.spawn(f"http://localhost:{port}", args)
+
+                from sys import stderr
+                stderr.write(f"Forked process with PID {pid}")
+
+                server.serve_forever()
+
+        import sys
+        sys.exit(self._exitcode)
+
+    def on_exit(self, exitcode):
+        self._exitcode = exitcode
+
+        from threading import Thread
+        Thread(target=self._server.shutdown).start()

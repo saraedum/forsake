@@ -21,23 +21,23 @@ import random
 
 from multiprocessing import Process
 
+import forsake.server
+import forsake.client
+
 
 class TestClientServerCommunication:
     HOST="localhost"
     PORT=random.randrange(10000, 2**16-1)
 
-    def spawn_server(self):
-        from forsake.server import Server
-
-        server = Server(self.HOST, self.PORT)
-        process = Process(target=server.start, args=(), daemon=True)
+    def spawn_server(self, server=forsake.server.Server):
+        server = server(self.HOST, self.PORT)
+        # We have to set daemon=False so that the server can fork child processes.
+        process = Process(target=server.start, args=(), daemon=False)
         process.start()
         return process
 
-    def spawn_client(self, host=HOST, port=PORT):
-        from forsake.client import Client
-
-        client = Client(host, port)
+    def spawn_client(self, host=HOST, port=PORT, client=forsake.client.Client):
+        client = client(host, port)
         process = Process(target=client.start, args=(), daemon=True)
         process.start()
         return process
@@ -49,8 +49,26 @@ class TestClientServerCommunication:
         client.join()
         assert client.exitcode != 0
 
-    def test_connect(self):
+    def test_exception(self):
+        # An exception on the forked process (the default server throws NotImplementedError) is reported on the client.
         server = self.spawn_server()
+        client = self.spawn_client()
+
+        client.join()
+
+        server.terminate()
+        server.join()
+
+        assert client.exitcode == 1
+        assert server.exitcode == -15
+
+    def test_connect(self):
+        # If the forked process does nothing, the client exits successfully.
+        class Server(forsake.server.Server):
+            def startup(self, _):
+                pass
+
+        server = self.spawn_server(server=Server)
         client = self.spawn_client()
 
         client.join()
