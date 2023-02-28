@@ -66,3 +66,17 @@ $ forsake-client --socket /tmp/forsake.socket --startup demo/sage/repl-startup.p
 sage: 1337.factor()
 7 * 191
 ```
+
+## Development
+
+Any recent version of Python should work to develop forsake. The few required
+dependencies can be conveniently installed with mamba:
+
+```
+mamba env create -f environment.yml
+mamba activate forsake-dev
+```
+
+To install a development version of forsake, run `pip install -e .` in this directory.
+
+To run the test suite, run `pytest` in this directy.
