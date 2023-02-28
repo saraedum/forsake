@@ -24,7 +24,7 @@ setup(
     version='0.1.0',
     packages=['forsake'],
     license='GPL 3.0+',
-    description="TODO",
+    description="a library to quickly spawn copies of a preloaded Python process with fork",
     long_description=open('README.md', encoding="UTF-8").read(),
     long_description_content_type="text/markdown",
     install_requires=["click"],
