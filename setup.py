@@ -21,7 +21,7 @@ from distutils.core import setup
 
 setup(
     name='forsake',
-    version="0.1.0",
+    version='0.1.0',
     packages=['forsake'],
     license='GPL 3.0+',
     description="TODO",
