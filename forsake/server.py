@@ -17,10 +17,12 @@
 #  along with forsake. If not, see <https://www.gnu.org/licenses/>.
 # ********************************************************************
 
+import forsake.rpc
+
+
 class Server:
-    def __init__(self, host, port):
-        self._host = host
-        self._port = port
+    def __init__(self, socket):
+        self._socket = socket
 
     def start(self):
         r"""
@@ -30,8 +32,7 @@ class Server:
         """
         self.warmup()
 
-        from xmlrpc.server import SimpleXMLRPCServer
-        with SimpleXMLRPCServer((self._host, self._port), use_builtin_types=True, allow_none=True) as server:
+        with forsake.rpc.Server(self._socket) as server:
             server.register_function(self.spawn, "spawn")
 
             server.serve_forever()
@@ -46,9 +47,8 @@ class Server:
         pid = forker.start()
         return pid
 
-    def exit(self, url, exitcode):
-        from xmlrpc.client import ServerProxy
-        with ServerProxy(url, allow_none=True) as proxy:
+    def exit(self, socket, exitcode):
+        with forsake.rpc.Client(socket) as proxy:
             proxy.exit(exitcode)
 
     def warmup(self):

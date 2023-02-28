@@ -18,6 +18,7 @@
 # ********************************************************************
 
 import random
+import pytest
 
 from multiprocessing import Process
 
@@ -26,18 +27,23 @@ import forsake.client
 
 
 class TestClientServerCommunication:
-    HOST="localhost"
-    PORT=random.randrange(10000, 2**16-1)
+    @pytest.fixture(autouse=True)
+    def socket(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as sockdir:
+            import os.path
+            self._socket = os.path.join(sockdir, "socket")
+            yield
 
     def spawn_server(self, server=forsake.server.Server):
-        server = server(self.HOST, self.PORT)
+        server = server(self._socket)
         # We have to set daemon=False so that the server can fork child processes.
         process = Process(target=server.start, args=(), daemon=False)
         process.start()
         return process
 
-    def spawn_client(self, host=HOST, port=PORT, client=forsake.client.Client):
-        client = client(host, port)
+    def spawn_client(self, socket=None, client=forsake.client.Client):
+        client = client(socket or self._socket)
         process = Process(target=client.start, args=(), daemon=True)
         process.start()
         return process

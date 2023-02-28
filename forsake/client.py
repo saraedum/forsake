@@ -17,9 +17,12 @@
 #  along with forsake. If not, see <https://www.gnu.org/licenses/>.
 # ********************************************************************
 
+import forsake.rpc
+
+
 class Client:
-    def __init__(self, host, port):
-        self._url = f"http://{host}:{port}"
+    def __init__(self, socket):
+        self._socket = socket
         self._server = None
         self._exitcode = None
 
@@ -30,23 +33,27 @@ class Client:
         This method blocks until the server signals to us that the forked
         process has terminated.
         """
-        from xmlrpc.client import ServerProxy
-        with ServerProxy(self._url, allow_none=True) as proxy:
+        with forsake.rpc.Client(self._socket) as proxy:
             from xmlrpc.server import SimpleXMLRPCServer
 
             from random import randrange
             port = randrange(2**13, 2**16)
 
-            with SimpleXMLRPCServer(("localhost", port), use_builtin_types=True, allow_none=True) as server:
-                self._server = server
-                server.register_function(self.on_exit, "exit")
+            from tempfile import TemporaryDirectory
+            with TemporaryDirectory() as sockdir:
+                import os.path
+                socket = os.path.join(sockdir, "socket")
 
-                pid = proxy.spawn(f"http://localhost:{port}", args)
+                with forsake.rpc.Server(socket) as server:
+                    self._server = server
+                    server.register_function(self.on_exit, "exit")
 
-                from sys import stderr
-                stderr.write(f"Forked process with PID {pid}")
+                    pid = proxy.spawn(socket, args)
 
-                server.serve_forever()
+                    from sys import stderr
+                    stderr.write(f"Forked process with PID {pid}")
+
+                    server.serve_forever()
 
         import sys
         sys.exit(self._exitcode)
