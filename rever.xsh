@@ -31,6 +31,7 @@ $PROJECT = 'forsake'
 
 $ACTIVITIES = [
     'version_bump',
+    'changelog',
     'tag',
     'push_tag',
     'pypi',
@@ -40,6 +41,10 @@ $ACTIVITIES = [
 $VERSION_BUMP_PATTERNS = [
     ('setup.py', r"    version=", r"    version='$VERSION',"),
 ]
+
+$CHANGELOG_FILENAME = 'ChangeLog'
+$CHANGELOG_TEMPLATE = 'TEMPLATE.rst'
+$CHANGELOG_NEWS = 'doc/news'
 
 $PUSH_TAG_REMOTE = 'git@github.com:saraedum/forsake.git'
 
