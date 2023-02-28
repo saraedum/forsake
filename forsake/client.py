@@ -17,6 +17,7 @@
 #  along with forsake. If not, see <https://www.gnu.org/licenses/>.
 # ********************************************************************
 
+import contextlib
 import forsake.rpc
 
 
@@ -25,6 +26,7 @@ class Client:
         self._socket = socket
         self._server = None
         self._exitcode = None
+        self.pid = None
 
     def start(self, args=None):
         r"""
@@ -33,33 +35,61 @@ class Client:
         This method blocks until the server signals to us that the forked
         process has terminated.
         """
-        with forsake.rpc.Client(self._socket) as proxy:
-            from xmlrpc.server import SimpleXMLRPCServer
-
-            from random import randrange
-            port = randrange(2**13, 2**16)
-
-            from tempfile import TemporaryDirectory
-            with TemporaryDirectory() as sockdir:
-                import os.path
-                socket = os.path.join(sockdir, "socket")
-
-                with forsake.rpc.Server(socket) as server:
-                    self._server = server
-                    server.register_function(self.on_exit, "exit")
-
-                    pid = proxy.spawn(socket, args)
-
-                    from sys import stderr
-                    stderr.write(f"Forked process with PID {pid}")
-
-                    server.serve_forever()
+        with self._create_client() as remote:
+            with self._create_server() as socket:
+                self._request_fork(remote, socket, args)
+                self._handle_signals()
+                self._join()
 
         import sys
         sys.exit(self._exitcode)
+
+    def interrupt(self):
+        import signal
+        self.signal(signal.SIGINT)
+
+    def kill(self):
+        import signal
+        self.signal(signal.SIKILL)
+
+    def signal(self, signal):
+        import os
+        os.kill(self.pid, signal)
 
     def on_exit(self, exitcode):
         self._exitcode = exitcode
 
         from threading import Thread
         Thread(target=self._server.shutdown).start()
+
+    @contextlib.contextmanager
+    def _create_client(self):
+        with forsake.rpc.Client(self._socket) as remote:
+            yield remote
+
+    @contextlib.contextmanager
+    def _create_server(self):
+        from tempfile import TemporaryDirectory
+        with TemporaryDirectory() as sockdir:
+            import os.path
+            socket = os.path.join(sockdir, "socket")
+
+            with forsake.rpc.Server(socket) as server:
+                self._server = server
+
+                server.register_function(self.on_exit, "exit")
+
+                yield socket
+
+    def _request_fork(self, remote, socket, args):
+        self.pid = remote.spawn(socket, args)
+
+        from sys import stderr
+        stderr.write(f"Forked process with PID {self.pid}")
+
+    def _handle_signals(self):
+        import signal
+        signal.signal(signal.SIGINT, lambda *args: self.interrupt())
+
+    def _join(self):
+        self._server.serve_forever()

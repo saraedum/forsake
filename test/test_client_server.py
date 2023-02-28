@@ -20,7 +20,7 @@
 import random
 import pytest
 
-from multiprocessing import Process
+from multiprocessing import Process, Event
 
 import forsake.server
 import forsake.client
@@ -38,13 +38,15 @@ class TestClientServerCommunication:
     def spawn_server(self, server=forsake.server.Server):
         server = server(self._socket)
         # We have to set daemon=False so that the server can fork child processes.
-        process = Process(target=server.start, args=(), daemon=False)
+        process = Process(target=server.start, daemon=False)
+        process.server = server
         process.start()
         return process
 
     def spawn_client(self, socket=None, client=forsake.client.Client):
         client = client(socket or self._socket)
-        process = Process(target=client.start, args=(), daemon=True)
+        process = Process(target=client.start, daemon=True)
+        process.client = client
         process.start()
         return process
 
@@ -62,11 +64,11 @@ class TestClientServerCommunication:
 
         client.join()
 
-        server.terminate()
+        server.kill()
         server.join()
 
         assert client.exitcode == 1
-        assert server.exitcode == -15
+        assert server.exitcode == -9
 
     def test_connect(self):
         # If the forked process does nothing, the client exits successfully.
@@ -79,8 +81,39 @@ class TestClientServerCommunication:
 
         client.join()
 
-        server.terminate()
+        server.kill()
         server.join()
 
         assert client.exitcode == 0
-        assert server.exitcode == -15
+        assert server.exitcode == -9
+
+    def test_keyboard_interrupt(self):
+        # When C-c is pressed on the client, the forked process receives it.
+
+        class Server(forsake.server.Server):
+            def startup(self, _):
+                try:
+                    while True:
+                        pass
+                except KeyboardInterrupt:
+                    import sys
+                    sys.exit(42)
+
+        class Client(forsake.client.Client):
+            def _join(self):
+                import signal
+                import os
+                os.kill(os.getpid(), signal.SIGINT)
+
+                super()._join()
+
+        server = self.spawn_server(server=Server)
+        client = self.spawn_client(client=Client)
+
+        client.join()
+
+        server.kill()
+        server.join()
+
+        assert client.exitcode == 42
+        assert server.exitcode == -9
