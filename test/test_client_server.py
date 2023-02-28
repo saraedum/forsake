@@ -1,3 +1,6 @@
+r"""
+Tests basics of client-server communication
+"""
 # ********************************************************************
 #  This file is part of forsake
 #
@@ -24,17 +27,17 @@ from .client_server import ClientServer
 
 
 class TestClientServerCommunication(ClientServer):
-    def test_client_without_server(self):
+    def test_client_without_server(self, socket):
         # When starting a client without a server, the client crashes and
         # terminates immediately.
-        client = self.spawn_client()
+        client = self.spawn_client(socket=socket)
         client.join()
         assert client.exitcode != 0
 
-    def test_exception(self):
+    def test_exception(self, socket):
         # An exception on the forked process (the default server throws NotImplementedError) is reported on the client.
-        server = self.spawn_server()
-        client = self.spawn_client()
+        server = self.spawn_server(socket=socket)
+        client = self.spawn_client(socket=socket)
 
         client.join()
 
@@ -44,14 +47,14 @@ class TestClientServerCommunication(ClientServer):
         assert client.exitcode == 1
         assert server.exitcode == -9
 
-    def test_connect(self):
+    def test_connect(self, socket):
         # If the forked process does nothing, the client exits successfully.
         class Server(forsake.server.Server):
             def startup(self, _):
                 pass
 
-        server = self.spawn_server(server=Server)
-        client = self.spawn_client()
+        server = self.spawn_server(socket=socket, server=Server)
+        client = self.spawn_client(socket=socket)
 
         client.join()
 
@@ -61,7 +64,7 @@ class TestClientServerCommunication(ClientServer):
         assert client.exitcode == 0
         assert server.exitcode == -9
 
-    def test_keyboard_interrupt(self):
+    def test_keyboard_interrupt(self, socket):
         # When C-c is pressed on the client, the forked process receives it.
 
         class Server(forsake.server.Server):
@@ -83,8 +86,8 @@ class TestClientServerCommunication(ClientServer):
 
                 super()._join()
 
-        server = self.spawn_server(server=Server)
-        client = self.spawn_client(client=Client)
+        server = self.spawn_server(socket=socket, server=Server)
+        client = self.spawn_client(socket=socket, client=Client)
 
         client.join()
 

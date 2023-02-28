@@ -28,9 +28,9 @@ import forsake.client
 
 
 class TestPluginClientServer(ClientServer):
-    def test_without_plugins(self):
-        server = self.spawn_server()
-        client = self.spawn_client()
+    def test_without_plugins(self, socket):
+        server = self.spawn_server(socket=socket)
+        client = self.spawn_client(socket=socket)
 
         client.join()
 
@@ -40,7 +40,7 @@ class TestPluginClientServer(ClientServer):
         assert client.exitcode == 1
         assert server.exitcode == -9
 
-    def test_cwd(self):
+    def test_cwd(self, socket):
         cwd = SimpleQueue()
 
         class Server(forsake.server.PluginServer):
@@ -55,7 +55,7 @@ class TestPluginClientServer(ClientServer):
             def start(self):
                 super().start(parameters=self.collect_cwd())
 
-        server = self.spawn_server(server=Server)
+        server = self.spawn_server(socket=socket, server=Server)
 
         import os
 
@@ -66,7 +66,7 @@ class TestPluginClientServer(ClientServer):
         with TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
-                client = self.spawn_client(client=Client)
+                client = self.spawn_client(socket=socket, client=Client)
             finally:
                 os.chdir(previous)
 
@@ -79,7 +79,7 @@ class TestPluginClientServer(ClientServer):
         assert client.exitcode == 0
         assert server.exitcode == -9
 
-    def test_env(self):
+    def test_env(self, socket):
         env = SimpleQueue()
 
         class Server(forsake.server.PluginServer):
@@ -94,7 +94,7 @@ class TestPluginClientServer(ClientServer):
             def start(self):
                 super().start(parameters=self.collect_env())
 
-        server = self.spawn_server(server=Server)
+        server = self.spawn_server(socket=socket, server=Server)
 
         KEY = "TEST_PLUGIN_CLIENT_SERVER"
 
@@ -102,7 +102,7 @@ class TestPluginClientServer(ClientServer):
 
         os.environ[KEY] = "1337"
         try:
-            client = self.spawn_client(client=Client)
+            client = self.spawn_client(socket=socket, client=Client)
         finally:
             del os.environ[KEY]
 
@@ -115,7 +115,7 @@ class TestPluginClientServer(ClientServer):
         assert client.exitcode == 0
         assert server.exitcode == -9
 
-    def test_stdio(self):
+    def test_stdio(self, socket):
         import tempfile
 
         with tempfile.NamedTemporaryFile() as stdout:
@@ -133,9 +133,9 @@ class TestPluginClientServer(ClientServer):
                     sys.stdout = open(stdout.name, "w")
                     super().start(parameters=self.collect_stdio())
 
-            server = self.spawn_server(server=Server)
+            server = self.spawn_server(socket=socket, server=Server)
 
-            client = self.spawn_client(client=Client)
+            client = self.spawn_client(socket=socket, client=Client)
             client.join()
 
             stdout = open(stdout.name, "r")
