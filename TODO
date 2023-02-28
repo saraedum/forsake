@@ -1,0 +1,9 @@
+TODO:
+
+- Turn this list into issues
+- Add a mode that spawns a server if none exists. Then connect to the existing server.
+- Handle C-c on the client.
+- Handle C-z and C-\ on the client. (Spawn a watcher process that sends these signals to the forked process.)
+- Rewire stdin, stdout, stderr
+- Rewire cwd
+- Rewire environment variables
