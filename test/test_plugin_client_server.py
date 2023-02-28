@@ -19,12 +19,11 @@
 
 import pytest
 
-from multiprocessing import SimpleQueue
-
 from .client_server import ClientServer
 
 import forsake.server
 import forsake.client
+from forsake.forker import context
 
 
 class TestPluginClientServer(ClientServer):
@@ -34,7 +33,7 @@ class TestPluginClientServer(ClientServer):
                 pass
 
     def test_cwd(self, socket):
-        cwd = SimpleQueue()
+        cwd = context.SimpleQueue()
 
         class Server(forsake.server.PluginServer):
             def startup(self, args):
@@ -65,7 +64,7 @@ class TestPluginClientServer(ClientServer):
                 assert cwd.get() == tmpdir
 
     def test_env(self, socket):
-        env = SimpleQueue()
+        env = context.SimpleQueue()
 
         class Server(forsake.server.PluginServer):
             def startup(self, args):

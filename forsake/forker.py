@@ -17,7 +17,10 @@
 #  along with forsake. If not, see <https://www.gnu.org/licenses/>.
 # ********************************************************************
 
-from multiprocessing import Process, SimpleQueue
+import multiprocessing
+
+
+context = multiprocessing.get_context("fork")
 
 
 class Forker:
@@ -27,13 +30,13 @@ class Forker:
 
     def start(self):
         # We have to set daemon=False so that the Forker can have the worker as a child process.
-        pid = SimpleQueue()
-        watcher = Process(target=self.spawn, args=(pid,), daemon=False)
+        pid = context.SimpleQueue()
+        watcher = context.Process(target=self.spawn, args=(pid,), daemon=False)
         watcher.start()
         return pid.get()
 
     def spawn(self, pid):
-        worker = Process(target=self.work, args=(), daemon=True)
+        worker = context.Process(target=self.work, args=(), daemon=True)
         worker.start()
         pid.put(worker.pid)
         worker.join()
