@@ -27,6 +27,12 @@ setup(
     description="TODO",
     long_description=open('README.md', encoding="UTF-8").read(),
     long_description_content_type="text/markdown",
-    install_requires=[],
+    install_requires=["click"],
     python_requires=">=3.9",
+    entry_points={
+        "console_scripts": [
+            "forsake-server=forsake.cli:server",
+            "forsake-client=forsake.cli:client"
+        ],
+    },
 )

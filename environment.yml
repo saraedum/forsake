@@ -3,6 +3,7 @@ channels:
 - conda-forge
 - defaults
 dependencies:
+- click
 - pytest
 - pip
 - pytest-timeout
