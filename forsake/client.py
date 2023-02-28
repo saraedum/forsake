@@ -115,17 +115,10 @@ class PluginClient(Client):
         import sys
         import os
 
-        stdin = sys.stdin.name
-        if stdin == "<stdin>":
-            stdin = f"/proc/{os.getpid()}/fd/0"
-
-        stdout = sys.stdout.name
-        if stdout == "<stdout>":
-            stdout = f"/proc/{os.getpid()}/fd/1"
-
-        stderr = sys.stderr.name
-        if stderr == "<stderr>":
-            stderr = f"/proc/{os.getpid()}/fd/2"
+        stdin = f"/proc/{os.getpid()}/fd/{sys.stdin.fileno()}"
+        stdout = f"/proc/{os.getpid()}/fd/{sys.stdout.fileno()}"
+        stderr = f"/proc/{os.getpid()}/fd/{sys.stderr.fileno()}"
+        print(stdin, stdout, stderr)
 
         return {"stdio": (stdin, stdout, stderr)}
 

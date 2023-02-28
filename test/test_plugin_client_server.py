@@ -115,34 +115,27 @@ class TestPluginClientServer(ClientServer):
         assert client.exitcode == 0
         assert server.exitcode == -9
 
-    def test_stdio(self, socket):
-        import tempfile
+    def test_stdio(self, socket, capfd):
+        class Server(forsake.server.PluginServer):
+            def startup(self, args):
+                super().startup(args)
 
-        with tempfile.NamedTemporaryFile() as stdout:
+                print("Hello World!", flush=True)
 
-            class Server(forsake.server.PluginServer):
-                def startup(self, args):
-                    super().startup(args)
+        class Client(forsake.client.PluginClient):
+            def start(self):
+                super().start(parameters=self.collect_stdio())
 
-                    print("Hello World!")
+        server = self.spawn_server(socket=socket, server=Server)
 
-            class Client(forsake.client.PluginClient):
-                def start(self):
-                    import sys
+        client = self.spawn_client(socket=socket, client=Client)
+        client.join()
 
-                    sys.stdout = open(stdout.name, "w")
-                    super().start(parameters=self.collect_stdio())
+        captured = capfd.readouterr()
+        assert captured.out == "Hello World!\n"
 
-            server = self.spawn_server(socket=socket, server=Server)
+        server.kill()
+        server.join()
 
-            client = self.spawn_client(socket=socket, client=Client)
-            client.join()
-
-            stdout = open(stdout.name, "r")
-            assert stdout.read() == "Hello World!\n"
-
-            server.kill()
-            server.join()
-
-            assert client.exitcode == 0
-            assert server.exitcode == -9
+        assert client.exitcode == 0
+        assert server.exitcode == -9
