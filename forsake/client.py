@@ -111,4 +111,5 @@ class PluginClient(Client):
 
     @classmethod
     def collect_env(cls):
-        raise NotImplementedError
+        import os
+        return {"env": (dict(os.environ),)}

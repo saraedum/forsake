@@ -75,3 +75,37 @@ class TestPluginClientServer(ClientServer):
 
         assert client.exitcode == 0
         assert server.exitcode == -9
+
+    def test_env(self):
+        env = SimpleQueue()
+
+        class Server(forsake.server.PluginServer):
+            def startup(self, args):
+                super().startup(args)
+
+                import os
+                env.put(dict(os.environ))
+
+        class Client(forsake.client.PluginClient):
+            def start(self):
+                super().start(parameters=self.collect_env())
+
+        server = self.spawn_server(server=Server)
+
+        KEY = "TEST_PLUGIN_CLIENT_SERVER"
+
+        import os
+        os.environ[KEY] = "1337"
+        try:
+            client = self.spawn_client(client=Client)
+        finally:
+            del os.environ[KEY]
+
+            client.join()
+            assert env.get()[KEY] == "1337"
+
+        server.kill()
+        server.join()
+
+        assert client.exitcode == 0
+        assert server.exitcode == -9

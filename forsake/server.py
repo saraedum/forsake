@@ -81,4 +81,8 @@ class PluginServer(Server):
         os.chdir(cwd)
 
     def startup_env(self, env):
-        raise NotImplementedError
+        import os
+        for key in os.environ:
+            del os.environ[key]
+        for key, value in env.items():
+            os.environ[key] = value
