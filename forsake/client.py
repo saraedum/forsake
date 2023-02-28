@@ -93,3 +93,22 @@ class Client:
 
     def _join(self):
         self._server.serve_forever()
+
+
+class PluginClient(Client):
+    def start(self, parameters={}):
+        from pickle import dumps
+        super().start(dumps(parameters))
+
+    @classmethod
+    def collect_stdio(cls):
+        raise NotImplementedError
+
+    @classmethod
+    def collect_cwd(cls):
+        import os
+        return {"cwd": (os.getcwd(),)}
+
+    @classmethod
+    def collect_env(cls):
+        raise NotImplementedError

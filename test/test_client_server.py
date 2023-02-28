@@ -17,39 +17,13 @@
 #  along with forsake. If not, see <https://www.gnu.org/licenses/>.
 # ********************************************************************
 
-import random
-import pytest
-
-from multiprocessing import Process, Event
-
 import forsake.server
 import forsake.client
 
+from .client_server import ClientServer
 
-class TestClientServerCommunication:
-    @pytest.fixture(autouse=True)
-    def socket(self):
-        from tempfile import TemporaryDirectory
-        with TemporaryDirectory() as sockdir:
-            import os.path
-            self._socket = os.path.join(sockdir, "socket")
-            yield
 
-    def spawn_server(self, server=forsake.server.Server):
-        server = server(self._socket)
-        # We have to set daemon=False so that the server can fork child processes.
-        process = Process(target=server.start, daemon=False)
-        process.server = server
-        process.start()
-        return process
-
-    def spawn_client(self, socket=None, client=forsake.client.Client):
-        client = client(socket or self._socket)
-        process = Process(target=client.start, daemon=True)
-        process.client = client
-        process.start()
-        return process
-
+class TestClientServerCommunication(ClientServer):
     def test_client_without_server(self):
         # When starting a client without a server, the client crashes and
         # terminates immediately.

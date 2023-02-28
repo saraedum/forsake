@@ -61,5 +61,24 @@ class Server:
         """
         pass
 
-    def startup(self, args):
+    def startup(self, parameters):
         raise NotImplementedError("server does not define a startup method, forked process will terminate immediately")
+
+
+class PluginServer(Server):
+    def startup(self, parameters):
+        if parameters is not None:
+            from pickle import loads
+            parameters = loads(parameters)
+            for section, args in parameters.items():
+                getattr(self, f"startup_{section}")(*args)
+
+    def startup_stdio(self, stdin, stdout, stderr):
+        raise NotImplementedError
+
+    def startup_cwd(self, cwd):
+        import os
+        os.chdir(cwd)
+
+    def startup_env(self, env):
+        raise NotImplementedError
