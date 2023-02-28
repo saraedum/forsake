@@ -109,3 +109,32 @@ class TestPluginClientServer(ClientServer):
 
         assert client.exitcode == 0
         assert server.exitcode == -9
+
+    def test_stdio(self):
+        import tempfile
+        with tempfile.NamedTemporaryFile() as stdout:
+            class Server(forsake.server.PluginServer):
+                def startup(self, args):
+                    super().startup(args)
+
+                    print("Hello World!")
+
+            class Client(forsake.client.PluginClient):
+                def start(self):
+                    import sys
+                    sys.stdout = open(stdout.name, "w")
+                    super().start(parameters=self.collect_stdio())
+
+            server = self.spawn_server(server=Server)
+
+            client = self.spawn_client(client=Client)
+            client.join()
+
+            stdout = open(stdout.name, "r")
+            assert stdout.read() == "Hello World!\n"
+
+            server.kill()
+            server.join()
+
+            assert client.exitcode == 0
+            assert server.exitcode == -9

@@ -102,7 +102,22 @@ class PluginClient(Client):
 
     @classmethod
     def collect_stdio(cls):
-        raise NotImplementedError
+        import sys
+        import os
+
+        stdin = sys.stdin.name
+        if stdin == "<stdin>":
+            stdin = f"/proc/{os.getpid()}/fd/0"
+
+        stdout = sys.stdout.name
+        if stdout == "<stdout>":
+            stdout = f"/proc/{os.getpid()}/fd/1"
+
+        stderr = sys.stderr.name
+        if stderr == "<stderr>":
+            stderr = f"/proc/{os.getpid()}/fd/2"
+
+        return {"stdio": (stdin, stdout, stderr)}
 
     @classmethod
     def collect_cwd(cls):

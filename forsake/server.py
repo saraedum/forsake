@@ -74,7 +74,16 @@ class PluginServer(Server):
                 getattr(self, f"startup_{section}")(*args)
 
     def startup_stdio(self, stdin, stdout, stderr):
-        raise NotImplementedError
+        import sys
+
+        sys.stdin.close()
+        sys.stdin = open(stdin, "r")
+
+        sys.stdout.close()
+        sys.stdout = open(stdout, "w")
+
+        sys.stderr.close()
+        sys.stderr = open(stderr, "w")
 
     def startup_cwd(self, cwd):
         import os
