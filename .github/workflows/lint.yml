@@ -18,10 +18,14 @@ jobs:
       - name: Install dependencies
         shell: bash -l {0}
         run: |
-          mamba install codespell=2.2.2 pycodestyle=2.9.1
+          mamba env update -n test -f environment.yml
       - name: Run codespell
         shell: bash -l {0}
-        run: codespell forsake
+        run: codespell forsake test
       - name: Run pycodestyle
         shell: bash -l {0}
-        run: pycodestyle forsake/
+        run: pycodestyle forsake test
+      - name: Run black
+        shell: bash -l {0}
+        run: |
+          black --check --diff forsake test
