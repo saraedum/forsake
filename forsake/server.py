@@ -45,6 +45,10 @@ class Server:
         from forsake.forker import Forker
         forker = Forker(startup=lambda: self.startup(args), on_exit=lambda worker: self.exit(client, worker.exitcode))
         pid = forker.start()
+
+        from sys import stderr
+        print(f"Forked worker with PID {pid}", file=stderr, flush=True)
+
         return pid
 
     def exit(self, socket, exitcode):

@@ -85,7 +85,7 @@ class Client:
         self.pid = remote.spawn(socket, args)
 
         from sys import stderr
-        stderr.write(f"Forked process with PID {self.pid}")
+        print(f"Attached to process with PID {self.pid}", file=stderr, flush=True)
 
     def _handle_signals(self):
         import signal

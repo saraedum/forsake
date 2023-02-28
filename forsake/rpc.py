@@ -49,7 +49,7 @@ class UnixStreamXMLRPCRequestHandler(xmlrpc.server.SimpleXMLRPCRequestHandler):
 
 class Server(socketserver.UnixStreamServer, xmlrpc.server.SimpleXMLRPCDispatcher):
     def __init__(self, socket):
-        self.logRequests = True
+        self.logRequests = False
         xmlrpc.server.SimpleXMLRPCDispatcher.__init__(self, allow_none=True, encoding=None, use_builtin_types=True)
         socketserver.UnixStreamServer.__init__(self, socket, UnixStreamXMLRPCRequestHandler, bind_and_activate=True)
 
