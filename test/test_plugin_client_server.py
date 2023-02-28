@@ -48,6 +48,7 @@ class TestPluginClientServer(ClientServer):
                 super().startup(args)
 
                 import os
+
                 cwd.put(os.getcwd())
 
         class Client(forsake.client.PluginClient):
@@ -57,9 +58,11 @@ class TestPluginClientServer(ClientServer):
         server = self.spawn_server(server=Server)
 
         import os
+
         previous = os.getcwd()
 
         from tempfile import TemporaryDirectory
+
         with TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
@@ -84,6 +87,7 @@ class TestPluginClientServer(ClientServer):
                 super().startup(args)
 
                 import os
+
                 env.put(dict(os.environ))
 
         class Client(forsake.client.PluginClient):
@@ -95,6 +99,7 @@ class TestPluginClientServer(ClientServer):
         KEY = "TEST_PLUGIN_CLIENT_SERVER"
 
         import os
+
         os.environ[KEY] = "1337"
         try:
             client = self.spawn_client(client=Client)
@@ -112,7 +117,9 @@ class TestPluginClientServer(ClientServer):
 
     def test_stdio(self):
         import tempfile
+
         with tempfile.NamedTemporaryFile() as stdout:
+
             class Server(forsake.server.PluginServer):
                 def startup(self, args):
                     super().startup(args)
@@ -122,6 +129,7 @@ class TestPluginClientServer(ClientServer):
             class Client(forsake.client.PluginClient):
                 def start(self):
                     import sys
+
                     sys.stdout = open(stdout.name, "w")
                     super().start(parameters=self.collect_stdio())
 

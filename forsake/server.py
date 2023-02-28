@@ -43,10 +43,15 @@ class Server:
         process ID of the forked process to the caller.
         """
         from forsake.forker import Forker
-        forker = Forker(startup=lambda: self.startup(args), on_exit=lambda worker: self.exit(client, worker.exitcode))
+
+        forker = Forker(
+            startup=lambda: self.startup(args),
+            on_exit=lambda worker: self.exit(client, worker.exitcode),
+        )
         pid = forker.start()
 
         from sys import stderr
+
         print(f"Forked worker with PID {pid}", file=stderr, flush=True)
 
         return pid
@@ -66,13 +71,16 @@ class Server:
         pass
 
     def startup(self, parameters):
-        raise NotImplementedError("server does not define a startup method, forked process will terminate immediately")
+        raise NotImplementedError(
+            "server does not define a startup method, forked process will terminate immediately"
+        )
 
 
 class PluginServer(Server):
     def startup(self, parameters):
         if parameters is not None:
             from pickle import loads
+
             parameters = loads(parameters)
             for section, args in parameters.items():
                 getattr(self, f"startup_{section}")(*args)
@@ -91,10 +99,12 @@ class PluginServer(Server):
 
     def startup_cwd(self, cwd):
         import os
+
         os.chdir(cwd)
 
     def startup_env(self, env):
         import os
+
         for key in os.environ:
             del os.environ[key]
         for key, value in env.items():

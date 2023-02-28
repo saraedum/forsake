@@ -22,9 +22,11 @@ import xmlrpc.server
 import xmlrpc.client
 import socketserver
 
+
 class UnixStreamHTTPConnection(HTTPConnection):
     def connect(self):
         import socket
+
         self.sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         self.sock.connect(self.host)
 
@@ -50,10 +52,19 @@ class UnixStreamXMLRPCRequestHandler(xmlrpc.server.SimpleXMLRPCRequestHandler):
 class Server(socketserver.UnixStreamServer, xmlrpc.server.SimpleXMLRPCDispatcher):
     def __init__(self, socket):
         self.logRequests = False
-        xmlrpc.server.SimpleXMLRPCDispatcher.__init__(self, allow_none=True, encoding=None, use_builtin_types=True)
-        socketserver.UnixStreamServer.__init__(self, socket, UnixStreamXMLRPCRequestHandler, bind_and_activate=True)
+        xmlrpc.server.SimpleXMLRPCDispatcher.__init__(
+            self, allow_none=True, encoding=None, use_builtin_types=True
+        )
+        socketserver.UnixStreamServer.__init__(
+            self, socket, UnixStreamXMLRPCRequestHandler, bind_and_activate=True
+        )
 
 
 class Client(xmlrpc.client.ServerProxy):
     def __init__(self, socket):
-        super().__init__("http://ignored.invalid", transport=UnixStreamTransport(socket), allow_none=True, use_builtin_types=True)
+        super().__init__(
+            "http://ignored.invalid",
+            transport=UnixStreamTransport(socket),
+            allow_none=True,
+            use_builtin_types=True,
+        )

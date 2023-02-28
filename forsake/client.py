@@ -42,24 +42,29 @@ class Client:
                 self._join()
 
         import sys
+
         sys.exit(self._exitcode)
 
     def interrupt(self):
         import signal
+
         self.signal(signal.SIGINT)
 
     def kill(self):
         import signal
+
         self.signal(signal.SIKILL)
 
     def signal(self, signal):
         import os
+
         os.kill(self.pid, signal)
 
     def on_exit(self, exitcode):
         self._exitcode = exitcode
 
         from threading import Thread
+
         Thread(target=self._server.shutdown).start()
 
     @contextlib.contextmanager
@@ -70,8 +75,10 @@ class Client:
     @contextlib.contextmanager
     def _create_server(self):
         from tempfile import TemporaryDirectory
+
         with TemporaryDirectory() as sockdir:
             import os.path
+
             socket = os.path.join(sockdir, "socket")
 
             with forsake.rpc.Server(socket) as server:
@@ -85,10 +92,12 @@ class Client:
         self.pid = remote.spawn(socket, args)
 
         from sys import stderr
+
         print(f"Attached to process with PID {self.pid}", file=stderr, flush=True)
 
     def _handle_signals(self):
         import signal
+
         signal.signal(signal.SIGINT, lambda *args: self.interrupt())
 
     def _join(self):
@@ -98,6 +107,7 @@ class Client:
 class PluginClient(Client):
     def start(self, parameters={}):
         from pickle import dumps
+
         super().start(dumps(parameters))
 
     @classmethod
@@ -122,9 +132,11 @@ class PluginClient(Client):
     @classmethod
     def collect_cwd(cls):
         import os
+
         return {"cwd": (os.getcwd(),)}
 
     @classmethod
     def collect_env(cls):
         import os
+
         return {"env": (dict(os.environ),)}

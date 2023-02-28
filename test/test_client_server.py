@@ -71,12 +71,14 @@ class TestClientServerCommunication(ClientServer):
                         pass
                 except KeyboardInterrupt:
                     import sys
+
                     sys.exit(42)
 
         class Client(forsake.client.Client):
             def _join(self):
                 import signal
                 import os
+
                 os.kill(os.getpid(), signal.SIGINT)
 
                 super()._join()

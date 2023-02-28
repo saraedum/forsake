@@ -30,8 +30,10 @@ class ClientServer:
     @pytest.fixture(autouse=True)
     def socket(self):
         from tempfile import TemporaryDirectory
+
         with TemporaryDirectory() as sockdir:
             import os.path
+
             self._socket = os.path.join(sockdir, "socket")
             yield
 
