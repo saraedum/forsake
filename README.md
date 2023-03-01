@@ -9,9 +9,15 @@ otherwise take a long time to load.
 This library was originally developed for SageMath which typically takes 2s to
 start. With this library the startup time can be cut down to about 100ms.
 
-The idea is to start the expensive process once and then use the [fork](https://docs.python.org/3/library/os.html#os.fork) system call to spawn more copies quickly. Since copies then have their stdin, stdout, stderr attached to the calling terminal, it appears is if the process were a child of the calling shell.
+The idea is to start the expensive process once and then use the
+[fork](https://docs.python.org/3/library/os.html#os.fork) system call to spawn
+more copies quickly. Since copies then have their stdin, stdout, stderr
+attached to the calling terminal, it appears is if the process were a child of
+the calling shell.
 
-Not all operating systems do implement `fork`. In particular, we cannot use this approach to quickly clone a process on Windows. It should work fine on all Unixes such as Linux and macOS.
+Not all operating systems do implement `fork`. In particular, we cannot use
+this approach to quickly clone a process on Windows. It should work fine on all
+Unixes such as Linux and macOS.
 
 ## Installation
 
@@ -30,13 +36,18 @@ or C++](https://github.com/saraedum/forsake/issues/5).
 
 ## Security
 
-The forking server is listening on a Unix socket which is created securely. To our knowledge there are no security problems with this approach.
+The forking server is listening on a Unix socket which is created securely. To
+our knowledge there are no security problems with this approach.
 
 ## Examples
 
-forsake comes with a command line interface `forsake-server` and `forsake-client`. These were written as demo applications. For production use, you probably want to write a specialized command line interface that suits your use case. 
+forsake comes with a command line interface `forsake-server` and
+`forsake-client`. These were written as demo applications. For production use,
+you probably want to write a specialized command line interface that suits your
+use case.
 
-Note that all the example files used below can be found in the [`demo/`](./demo) directory.
+Note that all the example files used below can be found in the
+[`demo/`](./demo) directory.
 
 ### Spawn a SageMath Executor
 
@@ -77,6 +88,7 @@ mamba env create -f environment.yml
 mamba activate forsake-dev
 ```
 
-To install a development version of forsake, run `pip install -e .` in this directory.
+To install a development version of forsake, run `pip install -e .` in this
+directory.
 
 To run the test suite, run `pytest` in this directy.
