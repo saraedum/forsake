@@ -1,3 +1,6 @@
+r"""
+Tests the :class:`PluginClient` and :class:`PluginServer` classes
+"""
 # ********************************************************************
 #  This file is part of forsake
 #
@@ -17,42 +20,51 @@
 #  along with forsake. If not, see <https://www.gnu.org/licenses/>.
 # ********************************************************************
 
-import pytest
+import os
 
-from .client_server import ClientServer
+from tempfile import TemporaryDirectory
 
 import forsake.server
 import forsake.client
 from forsake.forker import context
 
+from .client_server import ClientServer
+
 
 class TestPluginClientServer(ClientServer):
-    def test_without_plugins(self, socket):
-        with self.spawn_server(socket=socket):
-            with self.spawn_client(socket=socket, exitcode=1):
-                pass
-
+    r"""
+    Tests the client and server implementations that contain some predefined
+    startup methods.
+    """
     def test_cwd(self, socket):
+        r"""
+        Test that a client that provides its current working directory is
+        connected to a forked process that has its current directory set to
+        the same value.
+        """
         cwd = context.SimpleQueue()
 
         class Server(forsake.server.PluginServer):
-            def startup(self, args):
-                super().startup(args)
-
-                import os
+            r"""
+            A server that reports its current working directory on startup.
+            """
+            def startup(self, plugins):
+                super().startup(plugins)
 
                 cwd.put(os.getcwd())
 
         class Client(forsake.client.PluginClient):
-            def start(self):
-                super().start(parameters=self.collect_cwd())
+            r"""
+            A client that requests its current working directory to be copied
+            to the forked process.
+            """
+            def start(self, plugins=None):
+                plugins = plugins or {}
+                super().start(plugins={**plugins, **self.collect_cwd()})
 
         with self.spawn_server(socket=socket, server=Server):
-            import os
-
             previous = os.getcwd()
 
-            from tempfile import TemporaryDirectory
             with TemporaryDirectory() as tmpdir:
                 os.chdir(tmpdir)
 
@@ -64,43 +76,64 @@ class TestPluginClientServer(ClientServer):
                 assert cwd.get() == tmpdir
 
     def test_env(self, socket):
+        r"""
+        Test that a client that provides its current environment variables is
+        connected to a forked process that has these environment variables
+        restored.
+        """
         env = context.SimpleQueue()
 
         class Server(forsake.server.PluginServer):
-            def startup(self, args):
-                super().startup(args)
-
-                import os
+            r"""
+            A server that reports its current environment variables.
+            """
+            def startup(self, plugins):
+                super().startup(plugins)
 
                 env.put(dict(os.environ))
 
         class Client(forsake.client.PluginClient):
-            def start(self):
-                super().start(parameters=self.collect_env())
+            r"""
+            A client that requests its environment variables to be restored in
+            the forked process.
+            """
+            def start(self, plugins=None):
+                plugins = plugins or {}
+                super().start(plugins={**plugins, **self.collect_env()})
 
         with self.spawn_server(socket=socket, server=Server):
-            KEY = "TEST_PLUGIN_CLIENT_SERVER"
+            key = "TEST_PLUGIN_CLIENT_SERVER"
 
-            import os
-
-            os.environ[KEY] = "1337"
+            os.environ[key] = "1337"
             with self.spawn_client(socket=socket, client=Client):
                 pass
 
-            del os.environ[KEY]
+            del os.environ[key]
 
-            assert env.get()[KEY] == "1337"
+            assert env.get()[key] == "1337"
 
     def test_stdio(self, socket, capfd):
+        r"""
+        Test that the client's stdin, stdout, stderr are connected to the
+        forked process.
+        """
         class Server(forsake.server.PluginServer):
-            def startup(self, args):
-                super().startup(args)
+            r"""
+            A server that writes something to stdout.
+            """
+            def startup(self, plugins):
+                super().startup(plugins)
 
                 print("Hello World!", flush=True)
 
         class Client(forsake.client.PluginClient):
-            def start(self):
-                super().start(parameters=self.collect_stdio())
+            r"""
+            A client that requests its stdio streams to be connected to the
+            forked process.
+            """
+            def start(self, plugins=None):
+                plugins = plugins or {}
+                super().start(plugins={**plugins, **self.collect_stdio()})
 
         with self.spawn_server(socket=socket, server=Server):
             with self.spawn_client(socket=socket, client=Client):

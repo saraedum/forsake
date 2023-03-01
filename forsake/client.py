@@ -105,10 +105,10 @@ class Client:
 
 
 class PluginClient(Client):
-    def start(self, parameters={}):
+    def start(self, plugins=None):
         from pickle import dumps
 
-        super().start(dumps(parameters))
+        super().start(dumps(plugins))
 
     @classmethod
     def collect_stdio(cls):
