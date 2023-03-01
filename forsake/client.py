@@ -118,7 +118,6 @@ class PluginClient(Client):
         stdin = f"/proc/{os.getpid()}/fd/{sys.stdin.fileno()}"
         stdout = f"/proc/{os.getpid()}/fd/{sys.stdout.fileno()}"
         stderr = f"/proc/{os.getpid()}/fd/{sys.stderr.fileno()}"
-        print(stdin, stdout, stderr)
 
         return {"stdio": (stdin, stdout, stderr)}
 
