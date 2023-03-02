@@ -38,7 +38,7 @@ class Client:
         with self._create_client() as remote:
             with self._create_server() as socket:
                 self._request_fork(remote, socket, args)
-                self._handle_signals()
+                self._handle_signals(remote)
                 self._join()
 
         import sys
@@ -46,6 +46,7 @@ class Client:
         sys.exit(self._exitcode)
 
     def interrupt(self):
+        print("INT")
         import signal
 
         self.signal(signal.SIGINT)
@@ -58,9 +59,11 @@ class Client:
     def signal(self, signal):
         import os
 
+        print("Signaling", self.pid)
         os.kill(self.pid, signal)
 
     def on_exit(self, exitcode):
+        print("EXIT")
         self._exitcode = exitcode
 
         from threading import Thread
@@ -85,8 +88,20 @@ class Client:
                 self._server = server
 
                 server.register_function(self.on_exit, "exit")
+                server.register_function(self.on_tcgetattr, "tcgetattr")
+                server.register_function(self.on_tcsetattr, "tcsetattr")
 
                 yield socket
+
+    def on_tcgetattr(self, *args, **kwargs):
+        import sys
+        import termios
+        return termios.tcgetattr(sys.stdin.fileno(), *args, **kwargs)
+
+    def on_tcsetattr(self, *args, **kwargs):
+        import sys
+        import termios
+        return termios.tcsetattr(sys.stdin.fileno(), *args, **kwargs)
 
     def _request_fork(self, remote, socket, args):
         self.pid = remote.spawn(socket, args)
@@ -95,10 +110,10 @@ class Client:
 
         print(f"Attached to process with PID {self.pid}", file=stderr, flush=True)
 
-    def _handle_signals(self):
+    def _handle_signals(self, remote):
         import signal
 
-        signal.signal(signal.SIGINT, lambda *args: self.interrupt())
+        signal.signal(signal.SIGINT, lambda *args: remote.interrupt(self.pid))
 
     def _join(self):
         self._server.serve_forever()
@@ -132,3 +147,36 @@ class PluginClient(Client):
         import os
 
         return {"env": (dict(os.environ),)}
+
+    @classmethod
+    def collect_stdio2(cls):
+        import tempfile
+        import os
+
+        tmpdir = tempfile.mkdtemp()
+        stdin = os.path.join(tmpdir, "stdin")
+        stdout = os.path.join(tmpdir, "stdout")
+        stderr = os.path.join(tmpdir, "stderr")
+
+        os.mkfifo(stdin)
+        os.mkfifo(stdout)
+        os.mkfifo(stderr)
+
+        import forsake.forker
+
+        import subprocess
+
+        def read_stdin():
+            os.system(f"cat -u /dev/fd/0 > {stdin}")
+
+        def write_stdout():
+            os.system(f"cat -u {stdout} > /dev/fd/1")
+
+        def write_stderr():
+            os.system(f"cat -u {stderr} > /dev/fd/2")
+
+        forsake.forker.context.Process(target=read_stdin, name="cat stdin", daemon=True).start()
+        forsake.forker.context.Process(target=write_stdout, name="cat stdout", daemon=True).start()
+        forsake.forker.context.Process(target=write_stderr, name="cat stderr", daemon=True).start()
+
+        return {"stdio2": (stdin, stdout, stderr)}

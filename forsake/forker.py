@@ -31,15 +31,25 @@ class Forker:
     def start(self):
         # We have to set daemon=False so that the Forker can have the worker as a child process.
         pid = context.SimpleQueue()
-        watcher = context.Process(target=self.spawn, args=(pid,), daemon=False)
+        watcher = context.Process(target=self.spawn, args=(pid,), name="watcher", daemon=False)
         watcher.start()
-        return pid.get()
+        pid, worker = pid.get()
+        return pid, worker
 
     def spawn(self, pid):
-        worker = context.Process(target=self.work, args=(), daemon=True)
-        worker.start()
-        pid.put(worker.pid)
-        worker.join()
+        # worker = context.Process(target=self.work, args=(), name="worker", daemon=True)
+        import pty
+        (worker, fd) = pty.fork()
+
+        if worker == 0:
+            self.work()
+
+            import sys
+            sys.exit(0)
+
+        pid.put((worker, fd))
+        import os
+        os.waitpid(worker, 0)
         self._on_exit(worker)
 
     def work(self):
