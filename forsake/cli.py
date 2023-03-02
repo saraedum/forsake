@@ -46,7 +46,7 @@ def client(socket, startup):
             "exec": (startup.read(),),
             **client.collect_cwd(),
             **client.collect_env(),
-            **client.collect_stdio(),
+            **client.collect_stdio2(),
         }
     )
 
