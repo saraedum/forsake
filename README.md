@@ -17,7 +17,7 @@ the calling shell.
 
 Not all operating systems do implement `fork`. In particular, we cannot use
 this approach to quickly clone a process on Windows. It should work fine on all
-Unixes such as Linux and macOS.
+Unixes such as Linux and macOS. (But it does not actually work on macOS, see [#6](https://github.com/saraedum/forsake/issues/6).)
 
 ## Installation
 
